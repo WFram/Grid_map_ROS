@@ -57,6 +57,7 @@ bool loop_closure_being_processed = false;
 ros::Publisher pub_grid_map;
 ros::Publisher pub_traj_map;
 nav_msgs::OccupancyGrid grid_map_msg;
+bool first_msg = true;
 
 float kf_pos_x, kf_pos_z;
 int kf_pos_grid_x, kf_pos_grid_z;
@@ -211,6 +212,21 @@ void ptsKFCallback(const sensor_msgs::PointCloud::ConstPtr& MapPoints, const nav
 	temp.orientation.x = Qwc.x();
 	temp.orientation.y = Qwc.y();
 	temp.orientation.z = Qwc.z();
+	//cout << temp.position;
+	if (first_msg){
+		
+		grid_map_msg.info.origin.position.x = temp.position.y + 0.97 *cloud_min_z ;
+		grid_map_msg.info.origin.position.y = temp.position.x - 1.05 *cloud_min_x;
+		grid_map_msg.info.origin.position.z = temp.position.z;
+		
+		grid_map_msg.info.origin.orientation.w = temp.orientation.w;
+		grid_map_msg.info.origin.orientation.x = temp.orientation.y;
+		grid_map_msg.info.origin.orientation.y = temp.orientation.z;
+		grid_map_msg.info.origin.orientation.z = temp.orientation.x;
+		first_msg =false;
+		cout << temp << endl;
+		cout << grid_map_msg.info.origin << endl;
+	}
 
 	pts_and_pose.poses.push_back(temp);
 	
@@ -232,8 +248,23 @@ void ptsKFCallback(const sensor_msgs::PointCloud::ConstPtr& MapPoints, const nav
 
 	boost::shared_ptr<geometry_msgs::PoseArray> pts_and_pose_temp = boost::make_shared<geometry_msgs::PoseArray>(pts_and_pose);	
 	updateGridMap(pts_and_pose_temp);
+	//auto trajMsg = grid_map_msg; // Copy of masssege
+	/*static std::vector<cv::Point> trj;
+	cv::Mat addTraj = cv::Mat(h, w, CV_8SC1, (char*)(grid_map_msg.data.data()));
+	{
+		auto pos_x = temp.position.x*scale_factor;
+		auto pos_z = temp.position.z*scale_factor;
 
-	
+		auto pos_grid_x = int(floor((pos_x - grid_min_x) * norm_factor_x));
+		auto pos_grid_z = int(floor((pos_z - grid_min_z) * norm_factor_z));
+		trj.push_back(cv::Point(pos_grid_x,  pos_grid_z));
+		for(size_t i = 0; i < trj.size();i++){
+			cv::circle(addTraj, trj[i], 2, cv::Scalar(100), -1);
+			if(i!=0){
+				cv::line(addTraj, trj[i-1], trj[i], cv::Scalar(100), 2);
+			}
+		}
+	}*/
 	grid_map_msg.info.map_load_time = ros::Time::now();
 	pub_grid_map.publish(grid_map_msg);
 	
@@ -301,6 +332,7 @@ void ptCallback(const geometry_msgs::PoseArray::ConstPtr& pts_and_pose){
 	updateGridMap(pts_and_pose);
 
 	grid_map_msg.info.map_load_time = ros::Time::now();
+
 	pub_grid_map.publish(grid_map_msg);
 }
 void loopClosingCallback(const geometry_msgs::PoseArray::ConstPtr& all_kf_and_pts){
