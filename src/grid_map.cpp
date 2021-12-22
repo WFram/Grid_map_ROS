@@ -207,22 +207,47 @@ void ptsKFCallback(const sensor_msgs::PointCloud::ConstPtr& MapPoints, const nav
 	temp.position.z = Pwc.y();
 	temp.position.y = Pwc.z();
 	
-	Eigen::Quaterniond Qwc(Rcw.transpose());
+	Eigen::Matrix3d Rwc = Rcw.transpose();
+	Eigen::Matrix3d rotX = Eigen::Matrix3d::Zero();
+	rotX(0,0) = 1.0;
+	rotX(1,2) = -1.0;
+	rotX(2,1) = 1.0;
+	Rwc = Rwc * rotX;
+
+	double pi = std::acos(-1);
+	double theta = -83.5 * pi/ 180;
+	Eigen::Matrix3d rotZ = Eigen::Matrix3d::Zero();
+	rotZ(0,0) = cos(theta); rotZ(0,1) = -sin(theta); rotZ(0,2) = 0; 
+	rotZ(1,0) = sin(theta); rotZ(1,1) =  cos(theta); rotZ(1,2) = 0; 
+	rotZ(2,0) = 0; rotZ(2,1) = 0; rotZ(2,2) = 1; 
+	
+	Rwc = Rwc * rotZ;
+	Eigen::Quaterniond Qwc(Rwc);
+	
+	Eigen::Matrix3d rotX2 = Eigen::Matrix3d::Zero();
+	rotX2(0,0) = 1.0;
+	rotX2(1,1) = -1.0;
+	rotX2(2,2) = -1.0;
+	//Rwc = Rwc * rotX2;
+
 	temp.orientation.w = Qwc.w();
 	temp.orientation.x = Qwc.x();
 	temp.orientation.y = Qwc.y();
 	temp.orientation.z = Qwc.z();
+
+
+
 	//cout << temp.position;
 	if (first_msg){
 		
 		grid_map_msg.info.origin.position.x = temp.position.y + 0.97 *cloud_min_z ;
 		grid_map_msg.info.origin.position.y = temp.position.x - 1.05 *cloud_min_x;
-		grid_map_msg.info.origin.position.z = temp.position.z;
+		grid_map_msg.info.origin.position.z = 0;
 		
 		grid_map_msg.info.origin.orientation.w = temp.orientation.w;
-		grid_map_msg.info.origin.orientation.x = temp.orientation.y;
-		grid_map_msg.info.origin.orientation.y = temp.orientation.z;
-		grid_map_msg.info.origin.orientation.z = temp.orientation.x;
+		grid_map_msg.info.origin.orientation.x = temp.orientation.x;
+		grid_map_msg.info.origin.orientation.y = temp.orientation.y;
+		grid_map_msg.info.origin.orientation.z = temp.orientation.z;
 		first_msg =false;
 		cout << temp << endl;
 		cout << grid_map_msg.info.origin << endl;
@@ -240,7 +265,6 @@ void ptsKFCallback(const sensor_msgs::PointCloud::ConstPtr& MapPoints, const nav
 		tempPt.position.x = mp.x;
 		tempPt.position.z = mp.y;
 		tempPt.position.y = mp.z;
-
 		
 		pts_and_pose.poses.push_back(tempPt);
 	}
@@ -665,4 +689,3 @@ void printParams() {
 	printf("visit_thresh: %d\n", visit_thresh);
 
 }
-
