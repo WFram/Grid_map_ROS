@@ -222,6 +222,14 @@ void ptsKFCallback(const sensor_msgs::PointCloud::ConstPtr& MapPoints, const nav
 	rotZ(2,0) = 0; rotZ(2,1) = 0; rotZ(2,2) = 1; 
 	
 	Rwc = Rwc * rotZ;
+	theta = 90 * pi/ 180;
+	Eigen::Matrix3d rotZ2 = Eigen::Matrix3d::Zero();
+	rotZ2(0,0) = cos(theta); rotZ2(0,1) = -sin(theta); rotZ2(0,2) = 0; 
+	rotZ2(1,0) = sin(theta); rotZ2(1,1) =  cos(theta); rotZ2(1,2) = 0; 
+	rotZ2(2,0) = 0; rotZ2(2,1) = 0; rotZ2(2,2) = 1;
+	
+	Rwc = Rwc * rotZ2;
+
 	Eigen::Quaterniond Qwc(Rwc);
 	
 	Eigen::Matrix3d rotX2 = Eigen::Matrix3d::Zero();
@@ -240,8 +248,8 @@ void ptsKFCallback(const sensor_msgs::PointCloud::ConstPtr& MapPoints, const nav
 	//cout << temp.position;
 	if (first_msg){
 		
-		grid_map_msg.info.origin.position.x = temp.position.y + 0.97 *cloud_min_z ;
-		grid_map_msg.info.origin.position.y = temp.position.x - 1.05 *cloud_min_x;
+		grid_map_msg.info.origin.position.x = temp.position.y - 10;
+		grid_map_msg.info.origin.position.y = temp.position.x - 10;
 		grid_map_msg.info.origin.position.z = 0;
 		
 		grid_map_msg.info.origin.orientation.w = temp.orientation.w;
@@ -249,8 +257,8 @@ void ptsKFCallback(const sensor_msgs::PointCloud::ConstPtr& MapPoints, const nav
 		grid_map_msg.info.origin.orientation.y = temp.orientation.y;
 		grid_map_msg.info.origin.orientation.z = temp.orientation.z;
 		first_msg =false;
-		cout << temp << endl;
-		cout << grid_map_msg.info.origin << endl;
+		//cout << temp << endl;
+		//cout << grid_map_msg.info.origin << endl;
 	}
 
 	pts_and_pose.poses.push_back(temp);
@@ -507,18 +515,18 @@ void updateGridMap(const geometry_msgs::PoseArray::ConstPtr& pts_and_pose){
 	//printf("Processing key frame %u and %u points\n",n_kf_received, n_pts);
 	processMapPts(pts_and_pose->poses, n_pts, 1, kf_pos_grid_x, kf_pos_grid_z);
 	getGridMap();
-	{
-		cv::Mat traj = grid_map_thresh_resized.clone();
-		static std::vector<cv::Point> trj;
-		trj.push_back(cv::Point(kf_pos_grid_x,kf_pos_grid_z));
-		for(size_t i=0;i<trj.size();i++){
-			cv::circle(traj,trj[i],2,cv::Scalar(0),-1);
-			if(i!=0)
-				cv::line(traj, trj[i-1], trj[i],cv::Scalar(0), 2);
-		}
-		cv::imshow("Trajectory", traj);
-		cv::waitKey(1);
-	}
+	// {
+	// 	cv::Mat traj = grid_map_thresh_resized.clone();
+	// 	static std::vector<cv::Point> trj;
+	// 	trj.push_back(cv::Point(kf_pos_grid_x,kf_pos_grid_z));
+	// 	for(size_t i=0;i<trj.size();i++){
+	// 		cv::circle(traj,trj[i],2,cv::Scalar(0),-1);
+	// 		if(i!=0)
+	// 			cv::line(traj, trj[i-1], trj[i],cv::Scalar(0), 2);
+	// 	}
+	// 	cv::imshow("Trajectory", traj);
+	// 	cv::waitKey(1);
+	// }
 	
 	//showGridMap(pts_and_pose->header.seq);
 	//cout << endl << "Grid map saved!" << endl;
@@ -689,3 +697,4 @@ void printParams() {
 	printf("visit_thresh: %d\n", visit_thresh);
 
 }
+
